@@ -1,10 +1,9 @@
 //| mill-version: 1.1.5
-//| mvnDeps: ["dev.propensive:crux-mill:0.0.1"]
+//| mvnDeps: ["dev.propensive:crux-mill:0.1.1"]
 
 // A consumer of crux: compiled with the Proscala pinned in etc/refs, against the Pyrocosm pinned
 // there. The pins object is named `deps`, not `crux`: inside `package build` a module named `crux`
-// would shadow the `crux` package. Until crux is on Maven Central, crux-mill 0.0.1 resolves from
-// ~/.ivy2/local (`make publishLocal` in the repository root).
+// would shadow the `crux` package. crux-mill comes from Maven Central, as any build loads it.
 
 package build
 

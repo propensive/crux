@@ -89,6 +89,11 @@ object CruxPlugin extends AutoPlugin:
       cruxRefs.value,
       Refs.Cache(cruxCacheDirectory.value.toPath, cruxUpstreamRefs.value).fetch),
     resolvers ++= cruxPins.value.map(resolver),
+    // The fork's supplementary runtime, which its standard library needs and whose types the
+    // pinned libraries' TASTy refers to; Proscala's own POM declares the dependency the other way
+    // round, so nothing published pulls it in.
+    libraryDependencies ++= cruxRefs.value.find(pin => pin.proscala && pin.version == scalaVersion.value)
+      . toSeq.map(pin => "org.scala-lang" % "proscala-library_3" % pin.version),
     dependencyOverrides ++= cruxRefs.value.find(pin => pin.proscala && pin.version == scalaVersion.value)
       . toSeq.flatMap: pin =>
           // sbt's `doc` task wants `scaladoc_3` at the Scala version, which Proscala does not

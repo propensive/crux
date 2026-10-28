@@ -23,6 +23,7 @@
 package crux
 
 import mill.*
+import mill.javalib.Dep
 import mill.scalalib.ScalaModule
 
 // A Scala module compiled with the pinned Proscala — the Propensive fork of Scala 3, whose
@@ -34,13 +35,33 @@ import mill.scalalib.ScalaModule
 //     trait Project extends CruxScalaModule:
 //       def crux = deps
 //
-// with `propensive/proscala  3.10.0-pro-1.0.5` among the pins. The Scala version is the pin's,
-// and nothing else is needed: Mill resolves the compiler, the library and the compiler bridge as
-// `org.scala-lang` through the module's repositories, which `CruxDeps` has extended with the
-// Proscala release, and forces every `org.scala-lang` artifact to the Scala version — so a library
-// built against another Proscala release is compiled against this one.
+// with `propensive/proscala  3.10.0-pro-1.0.5` among the pins. The Scala version is the pin's;
+// Mill resolves the compiler, the library and the compiler bridge as `org.scala-lang` through the
+// module's repositories, which `CruxDeps` has extended with the Proscala release.
+//
+// A pinned library names the fork at the release it was built with, which need not be the one
+// pinned here, and only the pinned release is resolvable; so every `org.scala-lang` dependency,
+// transitive ones included, is forced to the Scala version. (Mill does this for the standard
+// library alone; a library depending on the compiler, say, needs the rest.) The fork stays
+// TASTy-compatible across its patch releases, which is what every such pin assumes.
 trait CruxScalaModule extends ScalaModule, CruxDeps:
   // The pinned repository that supplies the compiler.
   def scalaRepository: String = "proscala"
 
   def scalaVersion: T[String] = Task(crux.version(scalaRepository)())
+
+  // The fork's supplementary runtime, `proscala-library_3`, which its standard library needs at
+  // run time and whose types the pinned libraries' TASTy refers to. Proscala's own POM has the
+  // dependency the other way round (`proscala-library_3` depends on the standard library), so
+  // nothing published pulls it in; it is added here, as the standard library's companion.
+  override def scalaLibraryMvnDeps: T[Seq[Dep]] = Task:
+    super.scalaLibraryMvnDeps() :+ Dep.parse(s"org.scala-lang:proscala-library_3:${scalaVersion()}")
+
+  override def mapDependencies: Task[coursier.Dependency => coursier.Dependency] = Task.Anon:
+    val scala = coursier.version.VersionConstraint(scalaVersion())
+    val previous = super.mapDependencies()
+
+    (dependency: coursier.Dependency) =>
+      val mapped = previous(dependency)
+      if mapped.module.organization.value == "org.scala-lang" then mapped.withVersionConstraint(scala)
+      else mapped
