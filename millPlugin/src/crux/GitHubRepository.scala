@@ -35,8 +35,17 @@ import coursier.version.Version
 // artifact or a Maven listing) — so without it, every third-party module would cost two GitHub
 // requests per pin on every uncached resolution. With it, a module from another organisation is
 // refused before any request is made.
-final class GitHubRepository(val pin: Pin, underlying: IvyRepository, organisations: Set[String])
-extends Repository:
+//
+// A case class, so that two instances for the same pin are equal: Mill gives a module the
+// repositories of every module it depends on, transitively, and deduplicates them by equality —
+// with reference equality, Soundness's module graph multiplied these into millions of live
+// objects and exhausted the heap.
+final case class GitHubRepository(pin: Pin, organisations: Set[String]) extends Repository:
+  private lazy val underlying: IvyRepository =
+    IvyRepository.parse(pin.artifactPattern, Some(pin.metadataPattern)) match
+      case Right(repository) => repository
+      case Left(error)       => throw IllegalArgumentException(s"crux: bad repository pattern: $error")
+
   override def repr: String = s"crux:${pin.repository}:${pin.version}"
 
   override def find0[F[_]](module: Module, version: Version, fetch: Repository.Fetch[F])
@@ -53,9 +62,3 @@ extends Repository:
   def artifacts(dependency: Dependency, project: Project, overrideClassifiers: Option[Seq[Classifier]])
   :     Seq[(Publication, Artifact)] =
     underlying.artifacts(dependency, project, overrideClassifiers)
-
-object GitHubRepository:
-  def apply(pin: Pin, organisations: Set[String]): GitHubRepository =
-    IvyRepository.parse(pin.artifactPattern, Some(pin.metadataPattern)) match
-      case Right(repository) => new GitHubRepository(pin, repository, organisations)
-      case Left(error)       => throw IllegalArgumentException(s"crux: bad repository pattern: $error")
