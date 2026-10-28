@@ -84,8 +84,12 @@ trait CruxModule extends Module:
   // `//| mill-repositories` header. Ungated: prefer `CruxDeps`.
   def repositories: T[Seq[String]] = Task(pins().map(_.repositoryString))
 
-  // The repositories `CruxDeps` adds, gated by `organisations`.
-  def coursierRepositories: Task[Seq[coursier.Repository]] = Task.Anon:
+  // The repositories `CruxDeps` adds, gated by `organisations`. A `lazy val`, not a `def`, for
+  // the same reason Mill's own `repositoriesTask` is: a `def` would return a new anonymous task
+  // on every reference, each evaluated afresh — and Mill references a module's repositories once
+  // per module that depends on it, transitively, so a deep module graph would build these
+  // millions of times over.
+  lazy val coursierRepositories: Task[Seq[coursier.Repository]] = Task.Anon:
     pins().map(pin => GitHubRepository(pin, organisations(pin)))
 
   // The pinned version of a repository, named as `owner/name` or just `name`.

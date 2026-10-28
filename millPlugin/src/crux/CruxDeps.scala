@@ -37,7 +37,11 @@ import mill.javalib.CoursierModule
 trait CruxDeps extends CoursierModule:
   def crux: CruxModule
 
-  // Deduplicated: Mill hands a module the repositories of every module it depends on, so without
-  // this a deep module graph repeats the pinned repositories once per path through it.
-  override def repositoriesTask: Task[Seq[coursier.Repository]] = Task.Anon:
+  // A stable task, as Mill's own is: Mill hands a module the repositories of every module it
+  // depends on by referencing each one's `repositoriesTask` during a recursive traversal, so a
+  // `def` returning a fresh anonymous task would be re-evaluated once per path through the
+  // module graph. Deduplicated, since the traversal concatenates.
+  private lazy val cruxRepositoriesTask: Task[Seq[coursier.Repository]] = Task.Anon:
     (crux.coursierRepositories() ++ super.repositoriesTask()).distinct
+
+  override def repositoriesTask: Task[Seq[coursier.Repository]] = cruxRepositoriesTask
