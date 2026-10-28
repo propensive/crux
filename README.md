@@ -92,10 +92,13 @@ libraryDependencies += Crux.dep("soundness", "rudiments-core").value
 
 ## Moving from `sync-deps`
 
-A machine that installed releases into `~/.ivy2/local` with the earlier `sync_releases.py` has
-`dev.propensive` entries there whose descriptors still list sources and javadoc jars that were
-never published. Mill ignores them; sbt tries to fetch them and fails. Remove
-`~/.ivy2/local/dev.propensive` once a build uses crux, so that both tools resolve from GitHub.
+Coursier serves whatever is already local — a `file://` repository such as `~/.ivy2/local`, or a
+cached download — before it asks the network, whatever order the repositories are declared in.
+So a machine that installed releases into `~/.ivy2/local` with the earlier `sync_releases.py`
+keeps resolving from those copies, not from GitHub; and their descriptors list sources and
+javadoc jars that were never published, which Mill ignores and sbt tries to fetch. Remove
+`~/.ivy2/local/dev.propensive` once a build uses crux. (A module a build `publishLocal`s for its
+own use, as a launcher does, is found there as before.)
 
 ## Limits
 
