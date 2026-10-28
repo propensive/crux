@@ -1,0 +1,26 @@
+//| mill-version: 1.1.5
+//| mvnDeps: ["dev.propensive:crux-mill:0.0.1"]
+
+// A consumer of crux: compiled with the Proscala pinned in etc/refs, against the Pyrocosm pinned
+// there. The pins object is named `deps`, not `crux`: inside `package build` a module named `crux`
+// would shadow the `crux` package. Until crux is on Maven Central, crux-mill 0.0.1 resolves from
+// ~/.ivy2/local (`make publishLocal` in the repository root).
+
+package build
+
+import mill.*
+import scalalib.*
+import mill.api.BuildCtx
+import crux.*
+
+object deps extends CruxModule:
+  def refsFiles = Task.Sources(BuildCtx.workspaceRoot / "etc" / "refs")
+
+object example extends CruxScalaModule:
+  def crux = deps
+  def mvnDeps = Seq(crux.dep("pyrocosm", "pyrocosm-script")())
+
+  // For the example only: GitHub Releases and Maven Central, without ~/.ivy2/local, so that what
+  // resolves is what a fresh machine would resolve.
+  override def repositoriesTask = Task.Anon:
+    crux.coursierRepositories() ++ Seq(coursier.Repositories.central)

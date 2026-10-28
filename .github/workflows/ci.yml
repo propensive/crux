@@ -1,0 +1,17 @@
+name: CI
+
+# Build and test every pull request and every merge into main, via the shared workflow — see
+# propensive/.github for what it does and what it expects of this repository (the ./mill wrapper,
+# etc/shared, and etc/refs, which is empty here).
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+jobs:
+  build:
+    uses: propensive/.github/.github/workflows/scala-ci.yml@main
+    with:
+      compile: core.compile millPlugin.compile sbtPlugin.compile core.test

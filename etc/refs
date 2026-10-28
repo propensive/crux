@@ -1,0 +1,4 @@
+# The propensive libraries this repository builds against: one per line, tab-separated, as
+# `repository  version  [commit]`. crux depends on nothing propensive — it is what the others
+# depend on to find each other — so this file is empty; it exists so that the shared scripts in
+# propensive/.github, which read it, treat this repository like any other.

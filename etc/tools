@@ -1,0 +1,3 @@
+# The commands this repository runs, pinned as `repository  version`: none. crux runs no
+# Soundness tool; the file exists so that the shared scripts in propensive/.github, which read
+# it beside etc/refs, treat this repository like any other.
