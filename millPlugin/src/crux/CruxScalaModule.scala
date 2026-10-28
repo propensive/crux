@@ -50,12 +50,19 @@ trait CruxScalaModule extends ScalaModule, CruxDeps:
 
   def scalaVersion: T[String] = Task(crux.version(scalaRepository)())
 
-  // The fork's supplementary runtime, `proscala-library_3`, which its standard library needs at
-  // run time and whose types the pinned libraries' TASTy refers to. Proscala's own POM has the
-  // dependency the other way round (`proscala-library_3` depends on the standard library), so
-  // nothing published pulls it in; it is added here, as the standard library's companion.
+  // The fork's supplementary runtime — `proscala-library_3`, or its Scala.js or Scala Native
+  // build for a module of that platform — which its standard library needs at run time and
+  // whose types the pinned libraries' TASTy refers to. Proscala's own POMs have the dependency
+  // the other way round (the runtime depends on the standard library), so nothing published
+  // pulls it in; it is added here, as the standard library's companion.
   override def scalaLibraryMvnDeps: T[Seq[Dep]] = Task:
-    super.scalaLibraryMvnDeps() :+ Dep.parse(s"org.scala-lang:proscala-library_3:${scalaVersion()}")
+    val platform = this match
+      case _: mill.scalajslib.ScalaJSModule         => "_sjs1"
+      case native: mill.scalanativelib.ScalaNativeModule => s"_native${native.scalaNativeBinaryVersion()}"
+      case _                                        => ""
+
+    super.scalaLibraryMvnDeps()
+      :+ Dep.parse(s"org.scala-lang:proscala-library${platform}_3:${scalaVersion()}")
 
   override def mapDependencies: Task[coursier.Dependency => coursier.Dependency] = Task.Anon:
     val scala = coursier.version.VersionConstraint(scalaVersion())
